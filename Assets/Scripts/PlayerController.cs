@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
     Vector2 moveInput;
     Rigidbody body;
 
+
     void Awake()
     {
         body = GetComponent<Rigidbody>();
