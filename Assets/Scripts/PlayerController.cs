@@ -9,6 +9,7 @@ public class PlayerController : MonoBehaviour
 
     Vector2 moveInput;
     Rigidbody body;
+    bool jumpRequested;
 
 
     void Awake()
@@ -19,6 +20,11 @@ public class PlayerController : MonoBehaviour
     public void SetMoveInput(Vector2 input)
     {
         moveInput = input;
+    }
+
+    public void RequestJump()
+    {
+        jumpRequested = true;
     }
 
     void FixedUpdate()
