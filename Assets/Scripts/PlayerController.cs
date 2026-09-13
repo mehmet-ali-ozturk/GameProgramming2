@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float groundCheckRadius = 0.2f;
     [SerializeField] LayerMask groundMask;
 
+    [SerializeField] Transform cameraTransform;
+
     Vector2 moveInput;
     Rigidbody body;
     bool isGrounded;
@@ -37,7 +39,16 @@ public class PlayerController : MonoBehaviour
         //QueryTriggerInteraction.Ignore = Something about the trigger colliders? I don't know what this does exactly 
         isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
 
-        Vector3 direction = new Vector3(moveInput.x, 0f, moveInput.y);
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
+
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+
+        Vector3 direction = cameraForward * moveInput.y + cameraRight * moveInput.x;
         Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * moveSpeed;
         Vector3 horizontalVelocity = new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
         float rate = moveInput.sqrMagnitude > 0f ? acceleration : deceleration;
