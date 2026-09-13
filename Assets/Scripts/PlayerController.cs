@@ -6,11 +6,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float acceleration = 15f;
     [SerializeField] float deceleration = 20f;
+    [SerializeField] float jumpSpeed = 6f;
+
+    [SerializeField] Transform groundCheck;
+    [SerializeField] float groundCheckRadius = 0.2f;
+    [SerializeField] LayerMask groundMask;
 
     Vector2 moveInput;
     Rigidbody body;
+    bool isGrounded;
     bool jumpRequested;
-
 
     void Awake()
     {
@@ -29,6 +34,9 @@ public class PlayerController : MonoBehaviour
 
     void FixedUpdate()
     {
+        //QueryTriggerInteraction.Ignore = Something about the trigger colliders? I don't know what this does exactly 
+        isGrounded = Physics.CheckSphere(groundCheck.position, groundCheckRadius, groundMask, QueryTriggerInteraction.Ignore);
+
         Vector3 direction = new Vector3(moveInput.x, 0f, moveInput.y);
         Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * moveSpeed;
         Vector3 horizontalVelocity = new Vector3(body.linearVelocity.x, 0f, body.linearVelocity.z);
@@ -36,5 +44,13 @@ public class PlayerController : MonoBehaviour
 
         horizontalVelocity = Vector3.MoveTowards(horizontalVelocity, targetVelocity, rate * Time.fixedDeltaTime);
         body.linearVelocity = new Vector3(horizontalVelocity.x, body.linearVelocity.y, horizontalVelocity.z);
+
+        if (jumpRequested && isGrounded)
+        {
+            Vector3 velocity = body.linearVelocity;
+            velocity.y = jumpSpeed;
+            body.linearVelocity = velocity;
+        }
+        jumpRequested = false;
     }
 }
