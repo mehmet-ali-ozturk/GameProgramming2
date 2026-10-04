@@ -5,6 +5,7 @@ public class InputManager : MonoBehaviour
 {
     [SerializeField] InputActionReference moveAction;
     [SerializeField] InputActionReference jumpAction;
+    [SerializeField] InputActionReference sprintAction;
     [SerializeField] PlayerController playerController;
 
     void OnEnable()
@@ -12,9 +13,12 @@ public class InputManager : MonoBehaviour
         moveAction.action.performed += OnMove;
         moveAction.action.canceled += OnMove;
         jumpAction.action.performed += OnJump;
+        sprintAction.action.performed += OnSprint;
+        sprintAction.action.canceled += OnSprint;
 
         moveAction.action.Enable();
         jumpAction.action.Enable();
+        sprintAction.action.Enable();
     }
 
     void OnDisable()
@@ -22,9 +26,12 @@ public class InputManager : MonoBehaviour
         moveAction.action.performed -= OnMove;
         moveAction.action.canceled -= OnMove;
         jumpAction.action.performed -= OnJump;
+        sprintAction.action.performed -= OnSprint;
+        sprintAction.action.canceled -= OnSprint;
 
         moveAction.action.Disable();
         jumpAction.action.Disable();
+        sprintAction.action.Disable();
     }
 
     void OnMove(InputAction.CallbackContext context)
@@ -35,5 +42,10 @@ public class InputManager : MonoBehaviour
     void OnJump(InputAction.CallbackContext context)
     {
         playerController.RequestJump();
+    }
+
+    void OnSprint(InputAction.CallbackContext context)
+    {
+        playerController.SetSprinting(context.ReadValueAsButton());
     }
 }
