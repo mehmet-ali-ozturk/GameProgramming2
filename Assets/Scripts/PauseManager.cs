@@ -26,6 +26,7 @@ public class PauseManager : MonoBehaviour
         victoryMenu.SetActive(false);
         pauseBlur.SetActive(false);
         staminaBar.SetActive(true);
+        LockCursor();
     }
 
     void OnEnable()
@@ -64,6 +65,7 @@ public class PauseManager : MonoBehaviour
         pauseMenu.SetActive(true);
         pauseBlur.SetActive(true);
         staminaBar.SetActive(false);
+        UnlockCursor();
         Time.timeScale = 0f;
     }
 
@@ -73,6 +75,7 @@ public class PauseManager : MonoBehaviour
         pauseMenu.SetActive(false);
         pauseBlur.SetActive(false);
         staminaBar.SetActive(true);
+        LockCursor();
         Time.timeScale = 1f;
     }
 
@@ -96,6 +99,7 @@ public class PauseManager : MonoBehaviour
         gameOverMenu.SetActive(true);
         pauseBlur.SetActive(true);
         staminaBar.SetActive(false);
+        UnlockCursor();
         Time.timeScale = 0f;
     }
 
@@ -108,6 +112,7 @@ public class PauseManager : MonoBehaviour
         victoryMenu.SetActive(true);
         pauseBlur.SetActive(true);
         staminaBar.SetActive(false);
+        UnlockCursor();
 
         int minutes = Mathf.FloorToInt(elapsedTime / 60f);
         int seconds = Mathf.FloorToInt(elapsedTime % 60f);
@@ -120,5 +125,17 @@ public class PauseManager : MonoBehaviour
     {
         Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu");
+    }
+
+    void LockCursor()
+    {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 }

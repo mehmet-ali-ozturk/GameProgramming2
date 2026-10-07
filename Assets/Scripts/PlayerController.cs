@@ -32,6 +32,9 @@ public class PlayerController : MonoBehaviour
     bool jumpRequested;
     bool isSprinting;
 
+    public float MovementSpeed => movementVelocity.magnitude;
+    public bool IsGrounded => isGrounded;
+
     void Awake()
     {
         body = GetComponent<Rigidbody>();
