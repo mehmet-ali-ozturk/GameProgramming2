@@ -7,6 +7,8 @@ public class PlayerController : MonoBehaviour
 {
     [SerializeField] float moveSpeed = 5f;
     [SerializeField] float sprintSpeed = 8f;
+    [SerializeField] float aimMoveSpeed = 3.5f;
+    [SerializeField] float rotationSpeed = 720f;
     [SerializeField] float sprintStaminaPerSecond = 20f;
     [SerializeField] float acceleration = 15f;
     [SerializeField] float deceleration = 20f;
@@ -31,6 +33,7 @@ public class PlayerController : MonoBehaviour
     bool groundStateInitialized;
     bool jumpRequested;
     bool isSprinting;
+    bool isAiming;
 
     public float MovementSpeed => movementVelocity.magnitude;
     public bool IsGrounded => isGrounded;
@@ -55,6 +58,11 @@ public class PlayerController : MonoBehaviour
     public void SetSprinting(bool sprinting)
     {
         isSprinting = sprinting;
+    }
+
+    public void SetAiming(bool aiming)
+    {
+        isAiming = aiming;
     }
 
     public void ResetMovement()
@@ -101,9 +109,6 @@ public class PlayerController : MonoBehaviour
             }
         }
 
-        Quaternion cameraRotation = Quaternion.Euler(0f, cameraTransform.eulerAngles.y, 0f);
-        body.MoveRotation(cameraRotation);
-
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
 
@@ -114,14 +119,31 @@ public class PlayerController : MonoBehaviour
         cameraRight.Normalize();
 
         Vector3 direction = cameraForward * moveInput.y + cameraRight * moveInput.x;
-        bool sprinting = isSprinting && isGrounded && moveInput.sqrMagnitude > 0.01f;
+        bool sprinting = isSprinting && !isAiming && isGrounded && moveInput.sqrMagnitude > 0.01f;
 
         if (sprinting)
         {
             sprinting = playerManager.UseStamina(sprintStaminaPerSecond * Time.fixedDeltaTime);
         }
 
-        float currentSpeed = sprinting ? sprintSpeed : moveSpeed;
+        Quaternion targetRotation = body.rotation;
+
+        if (isAiming)
+        {
+            targetRotation = Quaternion.LookRotation(cameraForward, Vector3.up);
+        }
+        else if (direction.sqrMagnitude > 0.01f)
+        {
+            targetRotation = Quaternion.LookRotation(direction, Vector3.up);
+        }
+
+        body.MoveRotation(Quaternion.RotateTowards(
+            body.rotation,
+            targetRotation,
+            rotationSpeed * Time.fixedDeltaTime
+        ));
+
+        float currentSpeed = isAiming ? aimMoveSpeed : sprinting ? sprintSpeed : moveSpeed;
         Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * currentSpeed;
         float rate = moveInput.sqrMagnitude > 0f ? acceleration : deceleration;
 
