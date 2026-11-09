@@ -9,14 +9,18 @@ public class PlayerShooter : MonoBehaviour
     [SerializeField] Transform firePoint;
     [SerializeField] Rigidbody projectilePrefab;
     [SerializeField] float projectileSpeed = 25f;
+    [SerializeField] float fireRate = 3f;
     [SerializeField] float aimDistance = 200f;
     [SerializeField] LayerMask aimMask;
 
     Collider[] playerColliders;
+    PlayerAudio playerAudio;
+    float nextFireTime;
 
     void Awake()
     {
         playerColliders = GetComponentsInChildren<Collider>();
+        playerAudio = GetComponent<PlayerAudio>();
     }
 
     void OnEnable()
@@ -37,6 +41,13 @@ public class PlayerShooter : MonoBehaviour
         {
             return;
         }
+
+        if (Time.time < nextFireTime)
+        {
+            return;
+        }
+
+        nextFireTime = Time.time + 1f / Mathf.Max(fireRate, 0.01f);
 
         Ray aimRay = mainCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
         Vector3 targetPoint = aimRay.GetPoint(aimDistance);
@@ -61,5 +72,6 @@ public class PlayerShooter : MonoBehaviour
 
         projectile.GetComponent<Projectile>().IgnoreCollisions(playerColliders);
         projectile.linearVelocity = direction * projectileSpeed;
+        playerAudio.PlayShooting();
     }
 }

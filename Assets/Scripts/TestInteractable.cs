@@ -1,31 +1,80 @@
 using UnityEngine;
 using DG.Tweening;
-using DG.Tweening.Core;
 
 public class TestInteractable : MonoBehaviour, IInteractable
 {
     [SerializeField] string interactionPrompt = "Rotate Cube";
-    Quaternion targetRotation = Quaternion.Euler(90f, 0f, 0f);
+    [SerializeField] RotationPuzzle rotationPuzzle;
+    [SerializeField] float correctAngle = 90f;
+    [SerializeField] float rotationStep = 45f;
+    [SerializeField] float rotationDuration = 0.3f;
+    [SerializeField] float angleTolerance = 0.5f;
+    [SerializeField] Renderer[] poweredRenderers;
+    [SerializeField] Material unpoweredMaterial;
+    [SerializeField] Material poweredMaterial;
+    [SerializeField] AudioSource audioSource;
+    [SerializeField] AudioClip poweredSound;
 
     public Transform InteractionTransform => transform;
     public string InteractionPrompt => interactionPrompt;
+    public bool CanInteract => !DOTween.IsTweening(transform);
+    public bool IsPowered { get; private set; }
+
+    void Start()
+    {
+        UpdatePoweredState(false);
+
+        if (rotationPuzzle != null)
+        {
+            rotationPuzzle.Register(this);
+        }
+    }
 
     public void Interact(PlayerManager player)
     {
-        Debug.Log("Object interacted");
+        if (!CanInteract)
+        {
+            return;
+        }
 
-        if (DOTween.IsTweening(transform)) return;
+        transform.DOLocalRotate(
+            new Vector3(rotationStep, 0f, 0f),
+            rotationDuration,
+            RotateMode.LocalAxisAdd
+        )
+        .SetEase(Ease.InOutQuad)
+        .OnComplete(() =>
+        {
+            UpdatePoweredState(true);
 
-        transform.DORotate(new Vector3(45f, 0f, 0f), 0.3f, RotateMode.LocalAxisAdd)
-            .SetEase(Ease.InOutQuad)
-            .OnComplete(() =>
+            if (rotationPuzzle != null)
             {
-                float angleDifference = Quaternion.Angle(transform.rotation, targetRotation);
+                rotationPuzzle.CheckPuzzle();
+            }
+        });
+    }
 
-                if (angleDifference < 0.5f)
-                {
-                    Debug.Log("90d");
-                }
-            });
+    void UpdatePoweredState(bool playSound)
+    {
+        float angleDifference = Mathf.Abs(
+            Mathf.DeltaAngle(transform.localEulerAngles.x, correctAngle)
+        );
+
+        bool wasPowered = IsPowered;
+        IsPowered = angleDifference <= angleTolerance;
+        Material material = IsPowered ? poweredMaterial : unpoweredMaterial;
+
+        foreach (Renderer poweredRenderer in poweredRenderers)
+        {
+            if (poweredRenderer != null && material != null)
+            {
+                poweredRenderer.material = material;
+            }
+        }
+
+        if (playSound && IsPowered && !wasPowered && audioSource != null && poweredSound != null)
+        {
+            audioSource.PlayOneShot(poweredSound);
+        }
     }
 }

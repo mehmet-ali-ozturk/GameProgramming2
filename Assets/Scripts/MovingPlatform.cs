@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class MovingPlatform : MonoBehaviour
+public class MovingPlatform : MonoBehaviour, IMovingSurface
 {
     [SerializeField] float speed = 2f;
     [SerializeField] List<Transform> waypoints = new List<Transform>();

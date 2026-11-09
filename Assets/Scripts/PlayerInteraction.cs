@@ -17,7 +17,7 @@ public class PlayerInteraction : MonoBehaviour
     void Awake()
     {
         GetComponent<SphereCollider>().isTrigger = true;
-        promptObject.SetActive(false);
+        SetPromptVisible(false);
     }
 
     void OnEnable()
@@ -30,7 +30,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         interactAction.action.performed -= OnInteract;
         interactAction.action.Disable();
-        promptObject.SetActive(false);
+        SetPromptVisible(false);
     }
 
     void Update()
@@ -38,7 +38,7 @@ public class PlayerInteraction : MonoBehaviour
         if (Time.timeScale == 0f)
         {
             closestInteractable = null;
-            promptObject.SetActive(false);
+            SetPromptVisible(false);
             return;
         }
 
@@ -46,12 +46,16 @@ public class PlayerInteraction : MonoBehaviour
 
         if (closestInteractable == null)
         {
-            promptObject.SetActive(false);
+            SetPromptVisible(false);
             return;
         }
 
-        promptText.text = closestInteractable.InteractionPrompt;
-        promptObject.SetActive(true);
+        if (promptText != null)
+        {
+            promptText.text = closestInteractable.InteractionPrompt;
+        }
+
+        SetPromptVisible(true);
     }
 
     void OnTriggerEnter(Collider other)
@@ -117,6 +121,11 @@ public class PlayerInteraction : MonoBehaviour
                 continue;
             }
 
+            if (!interactable.CanInteract)
+            {
+                continue;
+            }
+
             float distance = (interactable.InteractionTransform.position - transform.position).sqrMagnitude;
 
             if (distance < closestDistance)
@@ -132,5 +141,13 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         return closest;
+    }
+
+    void SetPromptVisible(bool visible)
+    {
+        if (promptObject != null)
+        {
+            promptObject.SetActive(visible);
+        }
     }
 }

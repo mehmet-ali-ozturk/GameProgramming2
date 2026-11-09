@@ -25,6 +25,13 @@ public class Projectile : MonoBehaviour
 
     void OnCollisionEnter(Collision collision)
     {
+        IShootable shootable = collision.collider.GetComponentInParent<IShootable>();
+
+        if (shootable != null)
+        {
+            shootable.OnShot();
+        }
+
         Destroy(gameObject);
     }
 }

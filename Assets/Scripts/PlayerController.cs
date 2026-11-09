@@ -12,8 +12,10 @@ public class PlayerController : MonoBehaviour
     [SerializeField] float sprintStaminaPerSecond = 20f;
     [SerializeField] float acceleration = 15f;
     [SerializeField] float deceleration = 20f;
+    [SerializeField] float airAcceleration = 5f;
     [SerializeField] float jumpSpeed = 6f;
     [SerializeField] float jumpStaminaCost = 20f;
+    [SerializeField] float fallGravityMultiplier = 2.5f;
 
     [SerializeField] Transform groundCheck;
     [SerializeField] float groundCheckRadius = 0.2f;
@@ -30,13 +32,13 @@ public class PlayerController : MonoBehaviour
     PlayerAudio playerAudio;
     bool isGrounded;
     bool wasGrounded;
-    bool groundStateInitialized;
     bool jumpRequested;
     bool isSprinting;
     bool isAiming;
 
     public float MovementSpeed => movementVelocity.magnitude;
     public bool IsGrounded => isGrounded;
+    public bool IsJumping { get; private set; }
 
     void Awake()
     {
@@ -71,6 +73,7 @@ public class PlayerController : MonoBehaviour
         movementVelocity = Vector3.zero;
         jumpRequested = false;
         isSprinting = false;
+        IsJumping = false;
     }
 
     void FixedUpdate()
@@ -88,20 +91,20 @@ public class PlayerController : MonoBehaviour
         );
 
         isGrounded = groundFound && Vector3.Angle(groundHit.normal, Vector3.up) <= maxGroundAngle;
+        bool wasGroundedLastStep = wasGrounded;
 
-        if (groundStateInitialized && isGrounded && !wasGrounded)
+        if (isGrounded && body.linearVelocity.y <= 0f)
         {
-            playerAudio.PlayLanding();
+            IsJumping = false;
         }
 
         wasGrounded = isGrounded;
-        groundStateInitialized = true;
 
         Vector3 platformVelocity = Vector3.zero;
 
         if (isGrounded && groundHit.collider.gameObject.layer == LayerMask.NameToLayer("Platform"))
         {
-            MovingPlatform platform = groundHit.collider.GetComponent<MovingPlatform>();
+            IMovingSurface platform = groundHit.collider.GetComponentInParent<IMovingSurface>();
 
             if (platform != null)
             {
@@ -147,17 +150,62 @@ public class PlayerController : MonoBehaviour
         Vector3 targetVelocity = Vector3.ClampMagnitude(direction, 1f) * currentSpeed;
         float rate = moveInput.sqrMagnitude > 0f ? acceleration : deceleration;
 
-        movementVelocity = Vector3.MoveTowards(movementVelocity, targetVelocity, rate * Time.fixedDeltaTime);
+        if (isGrounded)
+        {
+            movementVelocity = Vector3.MoveTowards(
+                movementVelocity,
+                targetVelocity,
+                rate * Time.fixedDeltaTime
+            );
+        }
+        else if (moveInput.sqrMagnitude > 0.01f)
+        {
+            float airSpeed = Mathf.Max(movementVelocity.magnitude, currentSpeed);
+            Vector3 airTargetVelocity = Vector3.ClampMagnitude(direction, 1f) * airSpeed;
+
+            movementVelocity = Vector3.MoveTowards(
+                movementVelocity,
+                airTargetVelocity,
+                airAcceleration * Time.fixedDeltaTime
+            );
+        }
+
         Vector3 finalVelocity = movementVelocity + platformVelocity;
         body.linearVelocity = new Vector3(finalVelocity.x, body.linearVelocity.y, finalVelocity.z);
 
         if (jumpRequested && isGrounded && playerManager.UseStamina(jumpStaminaCost))
         {
+            movementVelocity += new Vector3(platformVelocity.x, 0f, platformVelocity.z);
+
             Vector3 velocity = body.linearVelocity;
+            velocity.x = movementVelocity.x;
             velocity.y = jumpSpeed;
+            velocity.z = movementVelocity.z;
             body.linearVelocity = velocity;
-            playerAudio.PlayJumping();
+            IsJumping = true;
         }
+
+        if (!isGrounded && body.linearVelocity.y < 0f)
+        {
+            body.AddForce(
+                Physics.gravity * (fallGravityMultiplier - 1f),
+                ForceMode.Acceleration
+            );
+        }
+
+        if (!IsJumping && (isGrounded || wasGroundedLastStep) && body.linearVelocity.y > 0f)
+        {
+            Vector3 velocity = body.linearVelocity;
+            velocity.y = 0f;
+            body.linearVelocity = velocity;
+        }
+
+        bool isWalking = isGrounded
+            && !IsJumping
+            && movementVelocity.sqrMagnitude > 0.1f;
+
+        playerAudio.UpdateFootsteps(isWalking, sprinting);
+
         jumpRequested = false;
     }
 }
